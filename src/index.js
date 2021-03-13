@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const { v4: uuidv4, validate } = require('uuid');
+const { request } = require('express');
 
 const app = express();
 app.use(express.json());
@@ -10,19 +11,44 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers
+  const user = users.find(user => user.username === username)
+  if(!user) return response.status(404).json({error: 'usuario nao encontrado'})
+  request.user = user
+  next()
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const { user } = request
+  if(user.pro || user.todos.length < 10) next()
+  else return response.status(403).json({error: 'nao pode criar todo'})
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers
+  const { id } = request.params
+
+  const user = users.find(user => user.username === username)
+  if(!user) return response.status(404).json({error: 'usuario nao encontrado'})
+
+  const regex = new RegExp(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, 'i')
+  if(!regex.test(id)) return response.status(400).json({error: 'id nao valido'})
+
+  const todo = user.todos.find(todo => todo.id = id)
+  if(!todo) return response.status(404).json({error: 'todo nao encontrado'})
+
+  request.user = user
+  request.todo = todo
+  next()
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params
+  const user = users.find(user => user.id === id)
+  if(!user) return response.status(404).json({error: 'usuario nao encontrado'})
+
+  request.user = user
+  next()
 }
 
 app.post('/users', (request, response) => {
